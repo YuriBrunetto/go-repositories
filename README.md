@@ -2,6 +2,8 @@
 
 > CLI application designed to seamlessly retrieve a user's repositories from GitHub.
 
+![Preview](demo.gif)
+
 ## Usage
 
 ```bash
