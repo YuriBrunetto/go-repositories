@@ -26,6 +26,12 @@ var spinnerStyle = lipgloss.
 	Background(lipgloss.Color("57")).
 	Foreground(lipgloss.Color("15"))
 
+var errorStyle = lipgloss.
+	NewStyle().
+	Bold(true).
+	Background(lipgloss.Color("203")).
+	Foreground(lipgloss.Color("15"))
+
 type Repository struct {
 	Name            string `json:"name"`
 	Description     string `json:"description"`
@@ -148,6 +154,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.table.Focus()
 				m.textInput.Blur()
 			}
+			m.err = nil
 		case tea.KeyCtrlC:
 			return m, tea.Quit
 		case tea.KeyEnter:
@@ -160,6 +167,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// error
 	case errMsg:
+		m.loading = false
 		m.err = msg
 
 	}
@@ -172,7 +180,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	var spinnerView string
+	var spinnerView, errorView string
 
 	if m.loading {
 		spinnerView = spinnerStyle.Render(m.spinner.View() + " Fetching repositories...")
@@ -180,17 +188,24 @@ func (m model) View() string {
 		spinnerView = ""
 	}
 
+	if m.err != nil {
+		errorView = errorStyle.Render("Error while fetching repositories!")
+	} else {
+		errorView = ""
+	}
+
 	return fmt.Sprintf(
-		"Let's fetch your GitHub repos!\n\n%s\n%s\n%s",
+		"Let's fetch your GitHub repos!\n\n%s\n%s%s\n%s",
 		m.textInput.View(),
 		spinnerView,
+		errorView,
 		baseStyle.Render(m.table.View()),
 	)
 }
 
 func fetchRepositories(username string) tea.Cmd {
 	return func() tea.Msg {
-		s := &http.Client{Timeout: time.Second * 10}
+		s := &http.Client{Timeout: time.Second * 8}
 		resp, err := s.Get("https://api.github.com/users/" + username + "/repos")
 		if err != nil {
 			return errMsg{err}
